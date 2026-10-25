@@ -93,7 +93,7 @@ end
 if mode=="shots" then
  for f=1,700 do
   frame()
-  if f==60 or f==150 or f==210 or f==290 or f==420 then dump("intro_"..f..".ppm") end
+  if f==40 or f==110 or f==175 or f==215 or f==260 or f==330 or f==420 then dump("intro_"..f..".ppm") end
  end
  btns[5]=true frame() btns[5]=false
  for f=1,200 do btns[1]=(f%60<30) frame() if f==200 then dump("game_start.ppm") end end

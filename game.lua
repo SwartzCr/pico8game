@@ -16,14 +16,14 @@ kt={
 }
 lvn={"left nostril","right nostril","nasal cavity","the sinuses","deep sinus","near the brain"}
 big=chr(6).."w"..chr(6).."t"
--- straw: bottom end, top end (nostril)
-s0x,s0y,s1x,s1y=34,112,76,72
+-- straw mouth (foreground)
+sox,soy=36,104
 
 function _init()
  cartdata("wizards_of_snort_1")
  hi=dget(0)
  gt=0 shk=0 parts={} pops={}
- st="intro" it=0
+ st="intro" it=0 flow={}
 end
 
 function pick(t) return t[flr(rnd(#t))+1] end
@@ -83,18 +83,35 @@ function _draw()
 end
 
 -->8
--- intro: up the straw we go
+-- intro: the nose looms, the straw sucks
 
 function upd_intro()
  it=it+1
- if it==170 then sfx(3) end
- if it==262 then sfx(4) shk=24 end
- if it>=262 and it<300 and it%5==0 then
-  puff(77,74,pick({6,5,15}),5)
+ if it==60 or it==130 or it==200 then sfx(3) end
+ if it==300 then
+  sfx(4) shk=24
+  puff(53,57,6,10) puff(75,57,5,10)
+ end
+ -- suction: dust streams into the straw
+ if it>60 and it<300 then
+  for i=1,2 do
+   local a=rnd()
+   add(flow,{x=sox+cos(a)*70,y=soy+sin(a)*40,c=pick({5,6,7})})
+  end
+ end
+ for q in all(flow) do
+  local dx,dy=sox-q.x,soy-q.y
+  local d=sqrt(dx*dx+dy*dy)
+  if d<6 or it>=300 then del(flow,q)
+  else
+   local v=1+60/d
+   q.px,q.py=q.x,q.y
+   q.x=q.x+dx/d*v q.y=q.y+dy/d*v
+  end
  end
  if btnp(4) or btnp(5) then
-  if it<340 then it=340 shk=0 parts={}
-  elseif it>350 then start_game() end
+  if it<370 then it=370 shk=0 parts={} flow={}
+  elseif it>380 then start_game() end
  end
 end
 
@@ -102,115 +119,141 @@ function dman(x,y,sz,fl,fr)
  sspr(fr*8,0,8,8,x,y,sz,sz,fl)
 end
 
-function draw_nose(wx,wy)
- -- head, lip area, chin, neck
- circfill(152,44+wy,64,15)
- circfill(100+wx,80+wy,12,15)
- circfill(112,100,14,15)
- rectfill(116,104,127,117,15)
- -- cheek blush
- circfill(120,66,7,14)
- -- nose bridge
- for i=0,10 do
-  local f=i/10
-  circfill(104-f*24+wx,4+f*58+wy,3+f*11,15)
+-- giant face rising over the horizon
+function draw_face(wx,wy)
+ circfill(64,-30,96,15)
+ ovalfill(-24,10,152,110,15)
+ -- eyes peeking from the top
+ ovalfill(14,4,44,14,7) ovalfill(84,4,114,14,7)
+ circfill(30,10,4,12) circfill(98,10,4,12)
+ circfill(30,10,2,0) circfill(98,10,2,0)
+ rectfill(10,0,48,6,15) rectfill(80,0,118,6,15)
+ line(14,6,44,7,4) line(84,7,114,6,4)
+ -- cheeks
+ circfill(18,46,9,14) circfill(110,46,9,14)
+ -- nose bridge (light) and bulb
+ -- soft shadow under the nose
+ ovalfill(36+wx,52+wy,92+wx,68+wy,14)
+ circfill(45+wx,47+wy,11,9) circfill(83+wx,47+wy,11,9)
+ circfill(64+wx,42+wy,18,9)
+ circfill(45+wx,47+wy,10,15) circfill(83+wx,47+wy,10,15)
+ circfill(64+wx,42+wy,17,15)
+ rectfill(58+wx,0,70+wx,30+wy,15)
+ line(57+wx,16,56+wx,30+wy,14) line(71+wx,16,72+wx,30+wy,14)
+ circfill(64+wx,36+wy,5,7)
+ -- nostrils
+ ovalfill(45+wx,52+wy,61+wx,61+wy,4) ovalfill(67+wx,52+wy,83+wx,61+wy,4)
+ ovalfill(47+wx,54+wy,59+wx,61+wy,0) ovalfill(69+wx,54+wy,81+wx,61+wy,0)
+ for i=0,3 do
+  line(70+i*3+wx,60+wy,71+i*3+wx,63+wy,4)
  end
- -- bulb
- circfill(80+wx,62+wy,14,15)
- circfill(82+wx,62+wy,7,14)
- circfill(80+wx,60+wy,7,15)
- circfill(76+wx,55+wy,2,7)
- -- nostril
- ovalfill(68+wx,69+wy,84+wx,78+wy,4)
- ovalfill(70+wx,71+wy,82+wx,77+wy,0)
- -- nostril hairs
- for i=0,4 do
-  line(70+i*3+wx,77+wy,69+i*3+wx,80+wy,4)
- end
- -- blissful closed eye + brow
- line(108,18,124,15,4)
- line(110,28,121,28,0)
- line(110,28,108,26,0)
- for i=0,3 do pset(111+i*3,29,0) end
  -- lips
- ovalfill(98,92,112,98,8)
- line(99,95,111,95,2)
+ ovalfill(40,70,88,80,8)
+ line(42,75,86,75,2)
+end
+
+function draw_floor()
+ rectfill(0,84,127,127,4)
+ line(0,84,127,84,9)
+ for i=-6,6 do line(64+i*4,84,64+i*30,127,2) end
+ for y in all({88,94,103,116}) do line(0,y,127,y,2) end
+end
+
+-- straw in perspective: thin at the nostril, wide at the mouth
+function tpos(f,wx,wy)
+ local nx,ny=53+wx,57+wy
+ return nx+(sox-nx)*f,ny+(soy-ny)*f,1.5+f*10.5
 end
 
 function draw_straw(wx,wy)
- local x1,y1=s1x+wx,s1y+wy
- local dx,dy=x1-s0x,y1-s0y
- local l=sqrt(dx*dx+dy*dy)
  local sc=0
- if it>170 and it<262 then sc=it*.8 end
- for i=0,l do
-  local f=i/l
+ if it>60 and it<300 then sc=it/10 end
+ for i=0,60 do
+  local f=i/60
+  local x,y,r=tpos(f,wx,wy)
   local c=8
-  if flr((i+sc)/4)%2==0 then c=7 end
-  circfill(s0x+dx*f,s0y+dy*f,1,c)
+  if flr(sqrt(f)*14+sc)%2==0 then c=7 end
+  circfill(x,y,r,c)
+ end
+ -- the explorer as a bulge travelling up the tube
+ if it>=230 and it<300 then
+  local f=1-(it-230)/70
+  f=f*f
+  local x,y,r=tpos(f,wx,wy)
+  circfill(x,y,r+1,7) circ(x,y,r+1,8)
+  local s=2+f*5
+  dman(x-s/2,y-s/2,s,gt%8<4,1)
+ end
+ -- open mouth of the straw
+ ovalfill(sox-13,soy-10,sox+13,soy+10,8)
+ ovalfill(sox-11,soy-8,sox+11,soy+8,7)
+ ovalfill(sox-9,soy-6,sox+9,soy+7,0)
+ if it>60 and it<300 then
+  circ(sox,soy,3+(gt%12)/2,1)
  end
 end
 
 function draw_intro()
  cls(1)
- -- wallpaper
- for x=0,127,12 do line(x,0,x,117,0) end
- rectfill(0,118,127,127,4)
- line(0,118,127,118,9)
  local wx,wy=0,0
- if it>=262 and it<330 then
-  wx=sin(it/6)*2 wy=cos(it/9)
+ if it>=300 and it<360 then wx=sin(it/6)*2 wy=cos(it/9) end
+ draw_face(wx,wy)
+ draw_floor()
+ for q in all(flow) do
+  line(q.px or q.x,q.py or q.y,q.x,q.y,q.c)
  end
- draw_nose(wx,wy)
  draw_straw(wx,wy)
- -- the tiny man
- if it<120 then
-  dman(-8+it*.3,110,8,false,it%16<8 and 1 or 2)
- elseif it<170 then
-  dman(28,110,8,false,1)
-  if it>135 then print("?",30,102,7) end
- elseif it<262 then
-  local f=(it-170)/92
-  local e=f*f
-  local sz=8-6*e
-  local cx=32+(s1x-32)*e
-  local cy=114+(s1y-114)*e
-  dman(cx-sz/2,cy-sz/2,sz,gt%8<4,1)
-  if it>200 then
-   print("help!",cx-24,cy-10,7)
+ -- the tiny explorer
+ local mx,my=46,104
+ if it<60 then
+  dman(mx,my,8,it>30,1)
+ elseif it<200 then
+  if it<130 then
+   local f=1-(it-60)/70
+   mx=66-20*f*f
+  else
+   mx=66-10*(it-130)/70+rnd(2)-1
   end
+  dman(mx,my,8,false,gt%6<3 and 1 or 2)
+  -- sweat flying off
+  if gt%8<4 then pset(mx-1,my+1,12) pset(mx-3,my-1,12) end
+  if it<85 then print("!",mx+3,my-8,7) end
+  if it>140 then print("help!",mx-2,my-9,7) end
+ elseif it<230 then
+  local f=(it-200)/30
+  local e=f*f
+  local s=8-4*e
+  mx=56+(sox-56)*e my=104+(soy-104)*e-sin(f*.5)*12
+  dman(mx-s/2+4,my-s/2+4,s,gt%4<2,1)
+  print("help!",mx-2,my-12,7)
  end
  for q in all(parts) do circfill(q.x,q.y,q.l>15 and 1 or 0,q.c) end
  -- captions
- if it<170 then
-  cprint("one day, a tiny explorer",3,7,0)
-  cprint("found a very long straw...",11,7,0)
- elseif it<262 then
-  cprint("ssshhluuuuurp!",6,12,1)
- elseif it<340 then
-  cprint("*snnnorrrrrt*",6,9,4)
- else
-  draw_title()
- end
+ if it<60 then cprint("a tiny explorer wanders...",119,7,0)
+ elseif it<130 then cprint("uh oh... suction!",119,10,0)
+ elseif it<200 then cprint("run!! run!!",119,8,0)
+ elseif it<300 then cprint("ssshhluuuuurp!",119,12,1)
+ elseif it<370 then cprint("*snnnorrrrrt*",119,9,4)
+ else draw_title() end
 end
 
 function draw_title()
- rectfill(0,0,127,31,0)
- line(0,31,127,31,14)
+ rectfill(0,0,127,39,0)
+ line(0,39,127,39,14)
  bcprint("wizards",3,11,3)
  bcprint("of snort",17,10,4)
+ if gt%40<26 then cprint("press x to start",31,7,0) end
  -- monster roster
- rectfill(2,36,46,88,0)
- rect(2,36,46,88,13)
- print("dust foes",7,39,7)
+ rectfill(84,82,127,127,0)
+ rect(84,82,127,127,13)
+ print("dust foes",88,85,7)
  for i=1,4 do
   local k=kt[i]
-  local y=36+i*11
-  spr(k.s+flr(gt/12)%2,6,y)
-  print(i<4 and tostr(k.sc*10) or "???",18,y+2,k.c)
+  local y=84+i*9
+  spr(k.s+flr(gt/12)%2,88,y)
+  print(i<4 and tostr(k.sc*10) or "???",100,y+2,k.c)
  end
- if gt%40<26 then cprint("press x to start",104,7,0) end
- cprint("hi "..pad(hi,5).."0",121,6,0)
+ print("hi "..pad(hi,5).."0",2,121,6)
 end
 
 -->8
@@ -523,7 +566,7 @@ end
 function upd_over()
  ot=ot+1
  if ot>90 and (btnp(4) or btnp(5)) then
-  st="intro" it=340 parts={}
+  st="intro" it=370 parts={} flow={}
  end
 end
 
