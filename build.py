@@ -217,6 +217,25 @@ for y, row in enumerate([".ee.", "e7e8", "ee88", ".88."]):
             fol[y + 2][x + 2] = c
 sprites[18] = fol
 
+# final boss: the snot lord (16x16, stored at sprite 32)
+BOSS = """
+................
+.....bbbbbb.....
+...bbbbbbbbbb...
+..bbbbbbbbbbbb..
+.b00bbbbbbbb00b.
+.bb700bbbb007bb.
+bbb770bbbb077bbb
+bbbbbbbbbbbbbbbb
+bbb0000000000bbb
+bb07070707070bbb
+bbb0000000000bbb
+3bbbbbbbbbbbbbb3
+.3bbb3bbbbb3bb3.
+..3b3.3bb3.3b3..
+...3...3b3...3..
+.......3.3......
+"""
 pix = [["0"] * 128 for _ in range(128)]
 for n, g in sprites.items():
     sx, sy = (n % 16) * 8, (n // 16) * 8
@@ -224,6 +243,11 @@ for n, g in sprites.items():
         for x in range(8):
             c = g[y][x]
             pix[sy + y][sx + x] = "0" if c == "." else c
+brows = [r.ljust(16, ".") for r in BOSS.strip("\n").split("\n")]
+assert len(brows) == 16 and all(len(r) == 16 for r in brows), "boss sprite must be 16x16"
+for y, r in enumerate(brows):
+    for x, c in enumerate(r):
+        pix[16 + y][x] = "0" if c == "." else c
 gfx = "\n".join("".join(r) for r in pix[:32])
 
 # --- sfx: (speed, [(pitch, wave, vol, fx), ...])

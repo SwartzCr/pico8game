@@ -28,7 +28,9 @@ kt={
  {s=7,sc=50,spd=.8,ch=.55,c=8,c2=2,inv=true},
  {s=9,sc=250,spd=1.1,ch=.2,c=11,c2=3}
 }
-lvn={"left nostril","right nostril","nasal cavity","the sinuses","deep sinus","near the brain"}
+maxlvl=9
+lvn={"left nostril","right nostril","nasal cavity","the turbinates",
+ "sinus junction","deep sinus","adenoid caves","near the brain","mucus core"}
 big=chr(6).."w"..chr(6).."t"
 -- straw mouth (foreground)
 sox,soy=36,104
@@ -37,7 +39,7 @@ function _init()
  cartdata("wizards_of_snort_1")
  hi=dget(0)
  gt=0 shk=0 parts={} pops={} hp=maxhp hpfl=0
- pw={0,0,0} pbs={}
+ pw={0,0,0} pbs={} gbs={} fb=nil win=0
  st="intro" it=0 flow={}
 end
 
@@ -89,6 +91,7 @@ function _update60()
  elseif st=="story" then upd_story()
  elseif st=="play" then upd_play()
  elseif st=="clear" then upd_clear()
+ elseif st=="ending" then upd_ending()
  else upd_over() end
 end
 
@@ -96,6 +99,7 @@ function _draw()
  if shk>0 then camera(rnd(4)-2,rnd(4)-2) else camera() end
  if st=="intro" then draw_intro()
  elseif st=="story" then draw_story()
+ elseif st=="ending" then draw_ending()
  else draw_game() end
  camera()
 end
@@ -487,7 +491,9 @@ function start_level()
  maxon=min(6,3+flr(lvl/2))
  ebmax=min(4,1+flr(lvl/2))
  bossin=false dying=0 sptm=0 ready=90
- msg="lv"..lvl..": "..lvn[(lvl-1)%#lvn+1] msgt=90
+ msg="lv"..lvl..": "..lvn[lvl] msgt=90
+ if lvl==maxlvl then msg="final level: "..lvn[lvl] end
+ fb=nil win=0 gbs={}
  st="play"
 end
 
@@ -534,9 +540,18 @@ end
 function upd_play()
  if msgt>0 then msgt=msgt-1 end
  if ready>0 then ready=ready-1 return end
+ if win>0 then
+  win=win-1
+  if win%6==0 then
+   puff(rnd(120),rnd(104),pick({11,3,7}),8) sfx(1)
+  end
+  if win==0 then start_ending() end
+  return
+ end
  upd_player()
  upd_pb()
  upd_pw()
+ upd_fb()
  upd_enemies()
  upd_ebs()
  if dying>0 then
@@ -598,6 +613,9 @@ function move_pb(b)
    if e.sp==0 and abs(e.x+4-b.x)<5 and abs(e.y+4-b.y)<5 then
     kill(e) return false
    end
+  end
+  if fb and abs(fb.x+8-b.x)<8 and abs(fb.y+8-b.y)<8 then
+   hit_fb() return false
   end
  end
  return true
@@ -709,8 +727,16 @@ function upd_enemies()
  end
  if #queue==0 and #en==0 and dying==0 then
   if not bossin then
-   bossin=true spawn(4) sfx(7)
-   msg="the booger king appears!" msgt=90
+   bossin=true sfx(7)
+   if lvl==maxlvl then
+    spawn_fb()
+    msg="the snot lord awakens!" msgt=120 shk=20
+   else
+    spawn(4)
+    msg="the booger king appears!" msgt=90
+   end
+  elseif fb or win>0 then
+   -- final boss still fighting / dying
   else
    st="clear" ct=0 pbs={} ebs={} pu=nil
   end
@@ -748,6 +774,194 @@ function upd_over()
  ot=ot+1
  if ot>90 and (btnp(4) or btnp(5)) then
   st="intro" it=370 parts={} flow={}
+ end
+end
+
+-->8
+-- final boss: the snot lord
+
+function spawn_fb()
+ fb={x=52,y=4,hp=100,mhp=100,fl=0,t=0,cd=150,mc=300,pat=0}
+ en={}
+end
+
+-- every few seconds the snot lord crusts over and shrugs off shots
+function fb_arm()
+ local c=fb.hp<=fb.mhp/2 and 240 or 300
+ return fb.t%c>=c-100
+end
+
+function hit_fb()
+ if fb_arm() then
+  puff(fb.x+8,fb.y+8,6,3) sfx(8)
+  return
+ end
+ fb.hp=fb.hp-1 fb.fl=6
+ sfx(10)
+ puff(fb.x+8,fb.y+8,11,4)
+ if fb.hp<=0 then
+  score=min(score+1000,32000)
+  add(pops,{x=fb.x,y=fb.y,s="10000",l=90})
+  for i=1,4 do puff(fb.x+8,fb.y+8,pick({11,3,7}),12) end
+  for e in all(en) do puff(e.x+4,e.y+4,kt[e.t].c,8) end
+  fb=nil en={} ebs={} gbs={} queue={}
+  msg="the snot lord is defeated!" msgt=150
+  win=150 shk=40 sfx(5)
+ elseif fb.hp==flr(fb.mhp/2) then
+  msg="the snot lord is furious!" msgt=90 shk=12 sfx(7)
+ end
+end
+
+function glob(a,v)
+ add(gbs,{x=fb.x+8,y=fb.y+8,dx=cos(a)*v,dy=sin(a)*v})
+end
+
+function upd_fb()
+ -- mucus globs drift straight through the nose hairs
+ for g in all(gbs) do
+  g.x=g.x+g.dx g.y=g.y+g.dy
+  if g.x<-4 or g.x>124 or g.y<-4 or g.y>108 then del(gbs,g)
+  elseif dying==0 and p.inv<=0 and abs(p.x+4-g.x)<4 and abs(p.y+4-g.y)<4 then
+   del(gbs,g) damage(1)
+  end
+ end
+ if not fb then return end
+ local mad=fb.hp<=fb.mhp/2
+ fb.t=fb.t+1
+ if fb.fl>0 then fb.fl=fb.fl-1 end
+ -- ooze toward the player, ignoring walls
+ local dx,dy=p.x-4-fb.x,p.y-4-fb.y
+ local d=max(sqrt(dx*dx+dy*dy),1)
+ local v=mad and .42 or .3
+ fb.x=mid(4,fb.x+dx/d*v+sin(fb.t/90)*.4,100)
+ fb.y=mid(4,fb.y+dy/d*v+cos(fb.t/70)*.3,84)
+ -- attacks: ring of globs, then aimed spread
+ fb.cd=fb.cd-1
+ if fb.cd<=0 then
+  fb.pat=fb.pat+1
+  if fb.pat%2==1 then
+   local n=mad and 12 or 8
+   for i=0,n-1 do glob(i/n+fb.t/300,.7) end
+  else
+   local a=atan2(p.x+4-fb.x-8,p.y+4-fb.y-8)
+   for i=-2,2 do glob(a+i*.04,.9) end
+   if mad then for i=-1,1 do glob(a+i*.06,1.2) end end
+  end
+  sfx(8)
+  fb.cd=mad and 90 or 140
+ end
+ -- calls in dust minions
+ fb.mc=fb.mc-1
+ if fb.mc<=0 and #en<(mad and 4 or 2) then
+  spawn(pick(mad and {1,2,3} or {1,2}))
+  fb.mc=mad and 240 or 360
+ end
+ if dying==0 and p.inv<=0 and abs(fb.x+8-p.x-4)<9 and abs(fb.y+8-p.y-4)<9 then
+  damage(2)
+ end
+end
+
+function draw_fb()
+ for g in all(gbs) do
+  circfill(ox+g.x,oy+g.y,2,3)
+  circfill(ox+g.x-.5,oy+g.y-.5,1,11)
+ end
+ if not fb then return end
+ if fb.fl>0 then for i=1,15 do pal(i,7) end
+ elseif fb_arm() then pal(11,6) pal(3,5) end
+ local sq=sin(fb.t/30)
+ sspr(0,16,16,16,ox+fb.x-sq,oy+fb.y+sq,16+sq*2,16-sq*2,p.x<fb.x)
+ pal()
+ -- boss health bar on the top border
+ print("snot lord",ox+4,oy+2,7)
+ rect(ox+42,oy+2,ox+116,oy+6,0)
+ rectfill(ox+43,oy+3,ox+43+72*fb.hp/fb.mhp,oy+5,fb.hp<=fb.mhp/2 and 8 or 11)
+end
+
+-->8
+-- ending: sneezed back out
+
+function start_ending()
+ st="ending" et=0 parts={} spray={}
+ if score>hi then hi=score dset(0,hi) end
+end
+
+function upd_ending()
+ et=et+1
+ if et==100 then
+  sfx(5) shk=30
+ end
+ if et>=100 and et<150 then
+  for i=1,3 do
+   local nx=pick({53,75})
+   add(spray,{x=nx,y=58,dx=rnd(4)-2,dy=rnd(3)-.5,r=0,v=.08+rnd(.12),c=pick({7,7,6,12,11})})
+  end
+ end
+ for q in all(spray) do
+  q.x=q.x+q.dx q.y=q.y+q.dy q.dy=q.dy+.05 q.r=q.r+q.v
+  if q.y>140 or q.r>4 then del(spray,q) end
+ end
+ if et>300 and (btnp(4) or btnp(5)) then
+  st="intro" it=370 parts={} flow={}
+ end
+end
+
+function draw_ending()
+ cls(1)
+ local wx,wy=0,0
+ if et<100 then
+  -- ah... ah...: the nose twitches harder and harder
+  local k=et/100
+  wx=sin(et/(8-k*5))*k*2 wy=-k*3
+ elseif et<140 then
+  wx=rnd(4)-2 wy=rnd(4)-2
+ end
+ draw_face(wx,wy)
+ draw_floor()
+ -- nostrils flare before the sneeze
+ if et>50 and et<100 then
+  ovalfill(46+wx,53+wy,60+wx,61+wy,0) ovalfill(68+wx,53+wy,82+wx,61+wy,0)
+ end
+ for q in all(spray) do circfill(q.x,q.y,q.r,q.c) end
+ -- the explorer rockets out, tumbling toward you
+ if et>=104 then
+  local f=min((et-104)/56,1)
+  local sz=2+14*f
+  local x=53+(56-53)*f
+  local y=58+(96-58)*f-sin(f*.5)*30
+  if f<1 then
+   local spin=flr(et/3)%4
+   local sx=({8,96,8,88})[spin+1]
+   for i=0,15 do pal(i,1) end
+   for o=-1,1,2 do
+    sspr(sx,0,8,8,x-sz/2+o,y-sz/2,sz,sz,spin>1)
+    sspr(sx,0,8,8,x-sz/2,y-sz/2+o,sz,sz,spin>1)
+   end
+   pal()
+   sspr(sx,0,8,8,x-sz/2,y-sz/2,sz,sz,spin>1)
+  else
+   -- landed: bounce, then a happy wave
+   local b=max(0,8-(et-160))*abs(sin((et-160)/16))
+   sspr(88,0,8,8,x-8,y-8-b,16,16,flr(et/20)%2==0)
+   if et>190 then print(big.."yay!",x+10,y-20,10) end
+  end
+ end
+ -- captions
+ if et<50 then cprint("ah...",119,7,0)
+ elseif et<100 then cprint("ah... ah...",119,7,0)
+ elseif et<160 then bcprint("achoo!!!",20,7,8)
+ end
+ if et>200 then
+  rectfill(0,0,127,30,0)
+  line(0,30,127,30,14)
+  bcprint("you're free!",3,11,3)
+  cprint("final score "..pad(score,5).."0",19,7,0)
+ end
+ if et>300 then
+  rectfill(16,108,111,126,0)
+  rect(16,108,111,126,14)
+  cprint("thanks for playing",111,7,0)
+  if gt%40<26 then cprint("press x",119,10,0) end
  end
 end
 
@@ -827,6 +1041,7 @@ function draw_game()
   circfill(ox+b.x,oy+b.y,1,5)
   pset(ox+b.x,oy+b.y-1,6)
  end
+ draw_fb()
  for q in all(parts) do
   circfill(ox+q.x,oy+q.y,q.l>25 and 1 or 0,q.c)
  end
@@ -837,7 +1052,7 @@ function draw_game()
  print("hi "..pad(max(hi,score),5).."0",90,1,6)
  draw_hp()
  for i=1,min(lives,6) do spr(1,2+(i-1)*7,7) end
- local nm="lv"..lvl.." "..lvn[(lvl-1)%#lvn+1]
+ local nm="lv"..lvl.." "..lvn[lvl]
  print(nm,126-#nm*4,9,14)
  print("dust "..(#queue+#en),2,122,5)
  -- active power-ups with time left
@@ -887,21 +1102,21 @@ __gfx__
 040040040040994049440494eee8ee8e004940044004409400000000000000000000000000000000000000000000000000000000000000000000000000000000
 0049040444000004499904948eeeeee8004400490440900000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000bbbbbb000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000bbbbbbbbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00bbbbbbbbbbbb000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0b00bbbbbbbb00b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0bb700bbbb007bb00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+bbb770bbbb077bbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+bbbbbbbbbbbbbbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+bbb0000000000bbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+bb07070707070bbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+bbb0000000000bbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+3bbbbbbbbbbbbbb30000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+03bbb3bbbbb3bb300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+003b303bb303b3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00030003b30003000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000003030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __sfx__
 00020000304502c4502844024440204301c4200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00030000246701e6701a66016650126400e6300c6200a610000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000

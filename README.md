@@ -41,6 +41,20 @@ the bottom of the screen with a timer, and you can stack them.
 | Tissue shield  | Invulnerable: monsters and dust balls can't hurt you          |
 | Rapid spray    | Up to 3 shots on screen, faster shots, hold the button to auto-fire |
 
+### Nine levels and the Snot Lord
+
+There are nine levels, from the left nostril all the way to the mucus core.
+On levels 1-8 the Booger King shows up once the dust is cleared. On level 9 you
+face the final boss instead: **the Snot Lord**, a giant glob that oozes
+straight through the nose hairs toward you. It has 100 hit points (bar on the
+top border), fires rings and aimed spreads of mucus globs that pass through
+walls, calls in dust minions, and every few seconds crusts over grey so your
+shots bounce off. At half health it gets furious: faster, more globs, more
+minions, shorter gaps between crusts.
+
+Beat it and you get the ending: the nose winds up, sneezes, and you're blasted
+back out into the open.
+
 Extra life every 10,000 points. High score is saved.
 
 ## Files
@@ -52,7 +66,8 @@ Extra life every 10,000 points. High score is saved.
   sprite-sheet preview)
 - `tools/harness.lua` — a minimal PICO-8 API stand-in for headless smoke tests
   and screenshots, run with a stock Lua 5.4:
-  `lua tools/harness.lua wizards_of_snort.p8 smoke 1` or `... shots`
+  `lua tools/harness.lua wizards_of_snort.p8 smoke 1`, `... shots`, or `... final`
+  (jumps to level 9, fights the boss and plays the ending)
 
 Tuning: overall pace (`pspd`, `espd`), health (`maxhp`) and power-up duration
 (`pdur`) are at the top of

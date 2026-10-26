@@ -28,6 +28,8 @@ flr=math.floor
 function ceil(x) return math.ceil(x) end
 function rnd(x) if type(x)=="table" then return x[math.random(#x)] end return math.random()*(x or 1) end
 abs=math.abs min=math.min max=math.max sqrt=math.sqrt
+function mid(a,b,c) if a>b then a,b=b,a end return math.max(a,math.min(b,c)) end
+function atan2(dx,dy) return (math.atan(-dy,dx)/(2*math.pi))%1 end
 function sin(x) return -math.sin(x*2*math.pi) end
 function cos(x) return math.cos(x*2*math.pi) end
 function add(t,v) t[#t+1]=v return v end
@@ -91,6 +93,40 @@ local function frame()
  for i=0,5 do pbtns[i]=btns[i] end
 end
 
+if mode=="final" then
+ math.randomseed(5)
+ -- level progression: clear 8 -> 9 works, and 9 has the right name
+ start_game() lvl=8 start_level()
+ queue={} en={} bossin=true
+ for f=1,400 do p.inv=5 frame() end
+ assert(lvl==9 and st=="play","did not reach level 9: "..tostring(lvl).." "..st)
+ queue={} en={}
+ for f=1,200 do p.inv=5 frame() end
+ assert(_G.fb,"final boss did not spawn")
+ for f=1,300 do
+  for k=0,3 do btns[k]=math.random()<0.2 end
+  btns[5]=math.random()<.3
+  if f%300==0 then hp=maxhp end
+  frame()
+  if f==250 then dump("boss1.ppm") end
+ end
+ assert(_G.fb,"boss died too soon")
+ io.write("boss hp after random play: ",_G.fb.hp," globs ",#gbs," minions ",#en,"\n")
+ while _G.fb.hp>45 do _G.fb.t=0 hit_fb() end
+ for f=1,200 do p.inv=5 frame() if f==60 then dump("boss2.ppm") end end
+ assert(_G.fb,"boss gone early")
+ while _G.fb do _G.fb.t=0 hit_fb() end
+ assert(win>0)
+ for f=1,160 do frame() end
+ assert(st=="ending","no ending: "..st)
+ for f=1,420 do frame()
+  if f==60 or f==115 or f==135 or f==175 or f==250 or f==400 then dump("end_"..f..".ppm") end
+ end
+ btns[5]=true frame() btns[5]=false frame()
+ assert(st=="intro","ending did not return to title")
+ io.write("final ok\n")
+ return
+end
 if mode=="shots" then
  for f=1,700 do
   frame()
