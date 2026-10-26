@@ -174,14 +174,12 @@ function draw_face(wx,wy)
  line(42,75,86,75,2)
 end
 
--- a giant mirror for a floor: flip the scene above the horizon into it
+-- a giant pane of blue glass for a floor
 function draw_floor()
- for y=85,127 do
-  memcpy(0x6000+y*64,0x6000+(168-y)*64,64)
- end
- -- silvery sheen over the reflection
- fillp(0xafaf.8)
- rectfill(0,85,127,127,6)
+ rectfill(0,85,127,127,12)
+ -- deeper blue toward the viewer
+ fillp(0xa5a5.8)
+ rectfill(0,102,127,127,1)
  fillp()
  -- glints sliding across the glass
  for i=0,2 do
@@ -194,12 +192,6 @@ function draw_floor()
  line(0,85,127,85,13)
 end
 
--- an upside-down, dimmed copy of the explorer under his feet
-function refl(x,y,sz,fl,fr)
- for i=1,15 do pal(i,({1,2,1,2,5,13,6,2,4,9,3,13,1,8,4})[i]) end
- sspr(fr*8,0,8,8,x,y+sz,sz,sz,fl,true)
- pal()
-end
 
 -- straw in perspective: thin at the nostril, wide at the mouth
 function tpos(f,wx,wy)
@@ -248,7 +240,7 @@ function draw_intro()
  -- the tiny explorer
  local mx,my=46,104
  if it<60 then
-  refl(mx,my,8,it>30,1)
+  ovalfill(mx,my+6,mx+7,my+8,1)
   dman(mx,my,8,it>30,1)
  elseif it<200 then
   if it<130 then
@@ -257,7 +249,7 @@ function draw_intro()
   else
    mx=66-10*(it-130)/70+rnd(2)-1
   end
-  refl(mx,my,8,false,gt%6<3 and 1 or 2)
+  ovalfill(mx,my+6,mx+7,my+8,1)
   dman(mx,my,8,false,gt%6<3 and 1 or 2)
   -- sweat flying off
   if gt%8<4 then pset(mx-1,my+1,12) pset(mx-3,my-1,12) end
@@ -964,7 +956,7 @@ function draw_ending()
   else
    -- landed: bounce, then a happy wave
    local b=max(0,8-(et-160))*abs(sin((et-160)/16))
-   refl(x-8,y-8+b,16,flr(et/20)%2==0,11)
+   ovalfill(x-8,y+5,x+7,y+9,1)
    sspr(88,0,8,8,x-8,y-8-b,16,16,flr(et/20)%2==0)
    if et>190 then print(big.."yay!",x+10,y-20,10) end
   end
