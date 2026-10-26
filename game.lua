@@ -605,7 +605,10 @@ function draw_pl()
   return
  end
  if p.inv>0 and gt%6<3 then return end
- dspr(1+flr(p.an/6)%2,p.x,p.y,p.fl)
+ local fr=flr(p.an/6)%2
+ if p.d==2 then dspr(12,p.x,p.y,fr==1)
+ elseif p.d==3 then dspr(11,p.x,p.y,fr==1)
+ else dspr(1+fr,p.x,p.y,p.fl) end
 end
 
 function draw_game()

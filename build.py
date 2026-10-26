@@ -21,6 +21,28 @@ S[2] = """
 ...11...
 ..444...
 """
+# player facing down (front view); walk cycle = horizontal flip
+S[11] = """
+..4444..
+.444444.
+.41ff14.
+..ffff..
+.cccccc.
+fcc66ccf
+..1664..
+.4466...
+"""
+# player facing up (back view), sprayer raised over the head
+S[12] = """
+...66...
+..4664..
+.f4444f.
+.c4444c.
+.cccccc.
+..cccc..
+..1..4..
+.44.....
+"""
 # dust bunny
 S[3] = """
 .6....6.
@@ -213,5 +235,5 @@ im = Image.new("RGB", (128, 32))
 for y in range(32):
     for x in range(128):
         im.putpixel((x, y), tuple(int(PAL[int(pix[y][x], 16)][i:i+2], 16) for i in (0, 2, 4)))
-im.crop((0, 0, 96, 24)).resize((96*8, 24*8), Image.NEAREST).save("sheet.png")
+im.crop((0, 0, 128, 24)).resize((128*8, 24*8), Image.NEAREST).save("sheet.png")
 print("ok", len(lua), "chars")
