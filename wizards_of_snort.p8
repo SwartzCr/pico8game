@@ -781,14 +781,14 @@ end
 -- final boss: the snot lord
 
 function spawn_fb()
- fb={x=52,y=4,hp=100,mhp=100,fl=0,t=0,cd=150,mc=300,pat=0}
+ fb={x=52,y=4,hp=60,mhp=60,fl=0,t=0,cd=180,mc=420,pat=0}
  en={}
 end
 
 -- every few seconds the snot lord crusts over and shrugs off shots
 function fb_arm()
- local c=fb.hp<=fb.mhp/2 and 240 or 300
- return fb.t%c>=c-100
+ local c=fb.hp<=fb.mhp/2 and 330 or 420
+ return fb.t%c>=c-60
 end
 
 function hit_fb()
@@ -832,7 +832,7 @@ function upd_fb()
  -- ooze toward the player, ignoring walls
  local dx,dy=p.x-4-fb.x,p.y-4-fb.y
  local d=max(sqrt(dx*dx+dy*dy),1)
- local v=mad and .42 or .3
+ local v=mad and .32 or .24
  fb.x=mid(4,fb.x+dx/d*v+sin(fb.t/90)*.4,100)
  fb.y=mid(4,fb.y+dy/d*v+cos(fb.t/70)*.3,84)
  -- attacks: ring of globs, then aimed spread
@@ -840,21 +840,21 @@ function upd_fb()
  if fb.cd<=0 then
   fb.pat=fb.pat+1
   if fb.pat%2==1 then
-   local n=mad and 12 or 8
-   for i=0,n-1 do glob(i/n+fb.t/300,.7) end
+   local n=mad and 8 or 6
+   for i=0,n-1 do glob(i/n+fb.t/300,.55) end
   else
    local a=atan2(p.x+4-fb.x-8,p.y+4-fb.y-8)
-   for i=-2,2 do glob(a+i*.04,.9) end
-   if mad then for i=-1,1 do glob(a+i*.06,1.2) end end
+   for i=-1,1 do glob(a+i*.05,.7) end
+   if mad then glob(a,1) end
   end
   sfx(8)
-  fb.cd=mad and 90 or 140
+  fb.cd=mad and 130 or 180
  end
  -- calls in dust minions
  fb.mc=fb.mc-1
- if fb.mc<=0 and #en<(mad and 4 or 2) then
+ if fb.mc<=0 and #en<(mad and 2 or 1) then
   spawn(pick(mad and {1,2,3} or {1,2}))
-  fb.mc=mad and 240 or 360
+  fb.mc=mad and 360 or 480
  end
  if dying==0 and p.inv<=0 and abs(fb.x+8-p.x-4)<9 and abs(fb.y+8-p.y-4)<9 then
   damage(2)

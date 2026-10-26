@@ -46,11 +46,11 @@ the bottom of the screen with a timer, and you can stack them.
 There are nine levels, from the left nostril all the way to the mucus core.
 On levels 1-8 the Booger King shows up once the dust is cleared. On level 9 you
 face the final boss instead: **the Snot Lord**, a giant glob that oozes
-straight through the nose hairs toward you. It has 100 hit points (bar on the
-top border), fires rings and aimed spreads of mucus globs that pass through
-walls, calls in dust minions, and every few seconds crusts over grey so your
-shots bounce off. At half health it gets furious: faster, more globs, more
-minions, shorter gaps between crusts.
+straight through the nose hairs toward you. It has 60 hit points (bar on the
+top border), fires rings and aimed spreads of slow mucus globs that pass
+through walls, calls in a dust minion now and then, and every so often crusts
+over grey for a second so your shots bounce off. At half health it gets
+furious: a little faster, with more globs and minions.
 
 Beat it and you get the ending: the nose winds up, sneezes, and you're blasted
 back out into the open.
