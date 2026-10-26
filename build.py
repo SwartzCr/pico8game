@@ -254,6 +254,7 @@ sfxs = [
     sfx(3, seq([34, 28, 31, 22], 2, [6, 5, 4, 2])),                         # 10 ouch
     sfx(3, seq([24, 28, 31, 36, 40, 43, 48], 1, 5)),                       # 11 power-up
     sfx(4, seq([36, 31, 28, 24], 1, [4, 3, 2, 1])),                          # 12 power-down
+    sfx(1, seq([40], 1, [2])),                                              # 13 typewriter tick
 ]
 
 lua = open("game.lua").read()

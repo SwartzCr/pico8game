@@ -35,6 +35,7 @@ function del(t,v) for i=1,#t do if t[i]==v then table.remove(t,i) return v end e
 function all(t) local c={} for i=1,#t do c[i]=t[i] end local i=0 return function() i=i+1 return c[i] end end
 function tostr(n) if math.type(n)=="float" and n==math.floor(n) then return string.format("%d",n) end return tostring(n) end
 chr=string.char
+sub=string.sub
 local store={}
 function cartdata() end
 function dget(i) return store[i] or 0 end
@@ -96,6 +97,11 @@ if mode=="shots" then
   if f==40 or f==110 or f==175 or f==215 or f==260 or f==330 or f==420 then dump("intro_"..f..".ppm") end
  end
  btns[5]=true frame() btns[5]=false
+ for pg=1,5 do
+  for f=1,150 do frame() end
+  dump("story_"..pg..".ppm")
+  btns[5]=true frame() btns[5]=false
+ end
  for f=1,200 do btns[1]=(f%60<30) frame() if f==200 then dump("game_start.ppm") end end
  -- play a bit with random input, cheat invuln
  for f=1,600 do

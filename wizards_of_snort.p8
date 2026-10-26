@@ -86,6 +86,7 @@ function _update60()
  if shk>0 then shk=shk-1 end
  upd_parts()
  if st=="intro" then upd_intro()
+ elseif st=="story" then upd_story()
  elseif st=="play" then upd_play()
  elseif st=="clear" then upd_clear()
  else upd_over() end
@@ -93,7 +94,9 @@ end
 
 function _draw()
  if shk>0 then camera(rnd(4)-2,rnd(4)-2) else camera() end
- if st=="intro" then draw_intro() else draw_game() end
+ if st=="intro" then draw_intro()
+ elseif st=="story" then draw_story()
+ else draw_game() end
  camera()
 end
 
@@ -126,7 +129,7 @@ function upd_intro()
  end
  if btnp(4) or btnp(5) then
   if it<370 then it=370 shk=0 parts={} flow={}
-  elseif it>380 then start_game() end
+  elseif it>380 then start_story() end
  end
 end
 
@@ -269,6 +272,98 @@ function draw_title()
   print(i<4 and tostr(k.sc*10) or "???",100,y+2,k.c)
  end
  print("hi "..pad(hi,5).."0",2,121,6)
+end
+
+-->8
+-- story: why you're up this nose
+
+story={
+ {"this nose belongs to a guy",
+  "who snorted every random",
+  "powder he could get his",
+  "hands on."},
+ {"now his nasal passages are",
+  "clogged solid with dust,",
+  "pollen and who-knows-what."},
+ {"and thanks to that straw,",
+  "you're stuck in there too!"},
+ {"the dust has come alive.",
+  "clear out every passage",
+  "with your saline spray..."},
+ {"...and trigger the big",
+  "sneeze that blasts you free!",
+  "",
+  "grab power-ups. good luck!"}
+}
+
+function start_story()
+ st="story" sp=1 stt=0 parts={}
+ -- powder drifting through the passage
+ dust={}
+ for i=1,40 do
+  add(dust,{x=rnd(128),y=rnd(84),v=.2+rnd(.6),c=pick({7,6,14,10,12,15})})
+ end
+end
+
+function story_len()
+ local n=0
+ for l in all(story[sp]) do n=n+#l end
+ return n
+end
+
+function upd_story()
+ stt=stt+1
+ for d in all(dust) do
+  d.x=d.x+d.v d.y=d.y+sin(gt/90+d.x/40)*.3
+  if d.x>128 then d.x=-2 d.y=rnd(84) end
+ end
+ local shown=flr(stt/2)
+ if shown<story_len() and stt%4==0 then sfx(13) end
+ if btnp(4) then start_game() return end
+ if btnp(5) then
+  if shown<story_len() then stt=story_len()*2
+  elseif sp<#story then sp=sp+1 stt=0
+  else start_game() end
+ end
+end
+
+function draw_story()
+ cls(2)
+ -- the nasal passage, receding into the dark
+ for i=0,7 do
+  local r=70-i*9+sin(gt/120)*2
+  ovalfill(64-r,42-r*.6,64+r,42+r*.6,({2,8,14,8,2,1,0,0})[i+1])
+ end
+ -- hairs around the rim
+ for i=0,15 do
+  local a=i/16+gt/2000
+  local x0,y0=64+cos(a)*70,42+sin(a)*42
+  line(x0,y0,64+cos(a)*58,42+sin(a)*35,4)
+ end
+ for d in all(dust) do pset(d.x,d.y,d.c) end
+ -- dust monsters lurking deeper in, from page 4 on
+ if sp>=4 then
+  for i=0,2 do
+   spr(3+flr(gt/12)%2+i*2,40+i*20,30+sin(gt/60+i/3)*3)
+  end
+ end
+ -- the tiny explorer, looking around
+ local fl=flr(gt/40)%2==0
+ sspr(88,0,8,8,56,58,16,16,fl)
+ -- text box
+ rectfill(0,84,127,127,0)
+ line(0,84,127,84,14)
+ local left=flr(stt/2)
+ for i=1,#story[sp] do
+  local l=story[sp][i]
+  local t=sub(l,1,max(left,0))
+  print(t,4,88+(i-1)*8,7)
+  left=left-#l
+ end
+ if left>=0 and gt%30<20 then
+  print(sp<#story and "x: next" or "x: start",96,121,10)
+ end
+ print("z: skip",2,121,5)
 end
 
 -->8
@@ -821,3 +916,4 @@ __sfx__
 00030000222601c2501f2401622000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00030000181501c1501f15024150281502b1503015000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00040000241401f1301c1201811000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000100002812000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000

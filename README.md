@@ -11,6 +11,9 @@ monsters.
 Open `wizards_of_snort.p8` in PICO-8 and type `run` (or drag the file onto the
 PICO-8 window).
 
+After the title screen, a short story explains how you ended up in there:
+X advances (or finishes the current page), Z skips straight to the game.
+
 - Arrow keys: move
 - X / Z: fire saline spray (one shot on screen at a time)
 
