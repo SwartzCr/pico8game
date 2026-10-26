@@ -26,6 +26,18 @@ into you costs 2 segments and a dust ball costs 1, with a moment of
 invulnerability after each hit. Run out and you lose a life. Health refills
 fully on a new life and partly (+3) at the start of each level.
 
+### Power-ups
+
+Every so often a power-up appears somewhere in the maze, pulsing. Grab it
+before it blinks out (about 10 s). Each lasts 8 seconds; active ones show at
+the bottom of the screen with a timer, and you can stack them.
+
+| Power-up       | Effect                                                        |
+|----------------|---------------------------------------------------------------|
+| Menthol rush   | Move about 70% faster, with a minty trail                     |
+| Tissue shield  | Invulnerable: monsters and dust balls can't hurt you          |
+| Rapid spray    | Up to 3 shots on screen, faster shots, hold the button to auto-fire |
+
 Extra life every 10,000 points. High score is saved.
 
 ## Files
@@ -39,5 +51,6 @@ Extra life every 10,000 points. High score is saved.
   and screenshots, run with a stock Lua 5.4:
   `lua tools/harness.lua wizards_of_snort.p8 smoke 1` or `... shots`
 
-Tuning: overall pace (`pspd`, `espd`) and health (`maxhp`) are at the top of
+Tuning: overall pace (`pspd`, `espd`), health (`maxhp`) and power-up duration
+(`pdur`) are at the top of
 `game.lua`; per-monster speed, chase behavior and points are in the `kt` table.

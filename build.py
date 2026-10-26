@@ -43,6 +43,39 @@ S[12] = """
 ..1..4..
 .44.....
 """
+# power-up: menthol drop (speed) - lightning bolt on a mint candy
+S[13] = """
+..3333..
+.333a33.
+333aa333
+33aaaa33
+3333aa33
+333aa333
+.33a333.
+..3333..
+"""
+# power-up: tissue shield (invulnerability)
+S[14] = """
+.cccccc.
+ccc77ccc
+c777777c
+ccc77ccc
+ccc77ccc
+.cc77cc.
+..cccc..
+...cc...
+"""
+# power-up: saline refill (rapid fire) - three spray shots
+S[15] = """
+........
+1ccc..7c
+........
+1ccc..7c
+........
+1ccc..7c
+........
+........
+"""
 # dust bunny
 S[3] = """
 .6....6.
@@ -219,6 +252,8 @@ sfxs = [
     sfx(2, seq([30, 26, 22, 18], 2, 4)),                                   # 8 enemy shot
     sfx(4, seq([36, 40, 43, 48, 43, 48], 0, 5)),                           # 9 extra life
     sfx(3, seq([34, 28, 31, 22], 2, [6, 5, 4, 2])),                         # 10 ouch
+    sfx(3, seq([24, 28, 31, 36, 40, 43, 48], 1, 5)),                       # 11 power-up
+    sfx(4, seq([36, 31, 28, 24], 1, [4, 3, 2, 1])),                          # 12 power-down
 ]
 
 lua = open("game.lua").read()

@@ -7,6 +7,13 @@ ox,oy=4,16
 pspd=.75   -- player pixels per frame
 espd=.7    -- monster speed multiplier
 maxhp=6    -- health bar segments
+pdur=480   -- power-up duration (frames)
+-- power-ups: menthol (speed), tissue (shield), saline (rapid fire)
+put={
+ {s=13,c=11,nm="menthol rush!"},
+ {s=14,c=12,nm="tissue shield!"},
+ {s=15,c=9,nm="rapid spray!"}
+}
 tun=5
 dxs={-1,1,0,0}
 dys={0,0,-1,1}
@@ -27,6 +34,7 @@ function _init()
  cartdata("wizards_of_snort_1")
  hi=dget(0)
  gt=0 shk=0 parts={} pops={} hp=maxhp hpfl=0
+ pw={0,0,0} pbs={}
  st="intro" it=0 flow={}
 end
 
@@ -368,7 +376,8 @@ function start_level()
  gen_maze()
  p={x=8,y=88,d=1,an=0,fl=false,inv=0,acc=0}
  hp=min(hp+3,maxhp)
- en={} ebs={} pb=nil parts={} pops={}
+ en={} ebs={} pbs={} fcd=0 parts={} pops={}
+ pw={0,0,0} pu=nil pwt=240+flr(rnd(240))
  queue={}
  for i=1,3+lvl do add(queue,1) end
  for i=1,min(lvl-1,6) do add(queue,2) end
@@ -395,6 +404,7 @@ function spawn(t)
 end
 
 function damage(n)
+ if pw[2]>0 then return end
  hp=max(hp-n,0)
  if hp==0 then hurt() return end
  p.inv=75 shk=4 hpfl=20
@@ -404,7 +414,7 @@ end
 
 function hurt()
  hp=0
- dying=60 pb=nil shk=10
+ dying=60 pbs={} shk=10
  sfx(2)
  puff(p.x+4,p.y+4,15,12) puff(p.x+4,p.y+4,12,8)
 end
@@ -428,6 +438,7 @@ function upd_play()
  if ready>0 then ready=ready-1 return end
  upd_player()
  upd_pb()
+ upd_pw()
  upd_enemies()
  upd_ebs()
  if dying>0 then
@@ -439,7 +450,7 @@ function upd_play()
     if score>hi then hi=score newhi=true dset(0,hi) end
    else
     p.x,p.y,p.d,p.fl,p.inv=8,88,1,false,120
-    hp=maxhp
+    hp=maxhp pw={0,0,0}
     ebs={}
    end
   end
@@ -453,7 +464,7 @@ function upd_player()
  for i=0,3 do
   if btn(i) and (w<0 or i~=p.d) then w=i end
  end
- p.acc=p.acc+pspd
+ p.acc=p.acc+(pw[1]>0 and pspd*1.7 or pspd)
  while p.acc>=1 do
   p.acc=p.acc-1
   local mv=false
@@ -468,24 +479,75 @@ function upd_player()
   if mv then step(p) p.an=p.an+1 end
  end
  if p.d<2 then p.fl=p.d==0 end
- if (btnp(4) or btnp(5)) and not pb then
-  pb={x=p.x+4,y=p.y+4,d=p.d}
+ if fcd>0 then fcd=fcd-1 end
+ local rap=pw[3]>0
+ -- with rapid spray, holding the button auto-fires
+ local fire=btnp(4) or btnp(5) or (rap and (btn(4) or btn(5)))
+ if fire and fcd<=0 and #pbs<(rap and 3 or 1) then
+  add(pbs,{x=p.x+4,y=p.y+4,d=p.d,v=rap and 3 or 2})
+  fcd=rap and 8 or 0
   sfx(0)
  end
 end
 
-function upd_pb()
- if not pb then return end
- for i=1,2 do
-  pb.x=pb.x+dxs[pb.d+1] pb.y=pb.y+dys[pb.d+1]
-  if pb.x<0 or pb.x>=120 or solid(flr(pb.x/8),flr(pb.y/8)) then
-   puff(pb.x,pb.y,12,3) pb=nil return
+function move_pb(b)
+ for i=1,b.v do
+  b.x=b.x+dxs[b.d+1] b.y=b.y+dys[b.d+1]
+  if b.x<0 or b.x>=120 or solid(flr(b.x/8),flr(b.y/8)) then
+   puff(b.x,b.y,12,3) return false
   end
   for e in all(en) do
-   if e.sp==0 and abs(e.x+4-pb.x)<5 and abs(e.y+4-pb.y)<5 then
-    kill(e) pb=nil return
+   if e.sp==0 and abs(e.x+4-b.x)<5 and abs(e.y+4-b.y)<5 then
+    kill(e) return false
    end
   end
+ end
+ return true
+end
+
+function upd_pb()
+ for b in all(pbs) do
+  if not move_pb(b) then del(pbs,b) end
+ end
+end
+
+-- power-ups
+function spawn_pu()
+ local cx,cy
+ for i=1,40 do
+  cx=1+flr(rnd(7))*2 cy=1+flr(rnd(6))*2
+  if abs(cx*8-p.x)+abs(cy*8-p.y)>=40 then break end
+ end
+ pu={x=cx*8,y=cy*8,t=flr(rnd(3))+1,life=600}
+ sfx(6)
+end
+
+function upd_pw()
+ for i=1,3 do
+  if pw[i]>0 then
+   pw[i]=pw[i]-1
+   if pw[i]==0 then sfx(12) end
+  end
+ end
+ if pu then
+  pu.life=pu.life-1
+  if pu.life<=0 then
+   pu=nil pwt=360+flr(rnd(300))
+  elseif dying==0 and abs(pu.x-p.x)<7 and abs(pu.y-p.y)<7 then
+   local t=put[pu.t]
+   pw[pu.t]=pdur
+   msg=t.nm msgt=60
+   sfx(11)
+   puff(pu.x+4,pu.y+4,t.c,12)
+   pu=nil pwt=420+flr(rnd(360))
+  end
+ else
+  pwt=pwt-1
+  if pwt<=0 and dying==0 then spawn_pu() end
+ end
+ -- speed trail
+ if pw[1]>0 and dying==0 and gt%3==0 then
+  add(parts,{x=p.x+2+rnd(4),y=p.y+5+rnd(2),dx=0,dy=0,c=pick({11,3}),l=12})
  end
 end
 
@@ -552,7 +614,7 @@ function upd_enemies()
    bossin=true spawn(4) sfx(7)
    msg="the booger king appears!" msgt=90
   else
-   st="clear" ct=0 pb=nil ebs={}
+   st="clear" ct=0 pbs={} ebs={} pu=nil
   end
  end
 end
@@ -625,6 +687,9 @@ function draw_pl()
   end
   return
  end
+ if pw[2]>0 and (pw[2]>90 or gt%8<4) then
+  circ(ox+p.x+3.5,oy+p.y+3.5,6,gt%8<4 and 12 or 7)
+ end
  if p.inv>0 and gt%6<3 then return end
  local fr=flr(p.an/6)%2
  if p.d==2 then dspr(12,p.x,p.y,fr==1)
@@ -651,9 +716,14 @@ function draw_game()
  clip(ox,oy,120,104)
  for e in all(en) do draw_en(e) end
  draw_pl()
- if pb then
-  circfill(ox+pb.x,oy+pb.y,1,12)
-  pset(ox+pb.x,oy+pb.y-1,7)
+ for b in all(pbs) do
+  circfill(ox+b.x,oy+b.y,1,12)
+  pset(ox+b.x,oy+b.y-1,7)
+ end
+ if pu and (pu.life>120 or gt%8<5) then
+  local t=put[pu.t]
+  circ(ox+pu.x+3,oy+pu.y+3,5+(gt/8)%3,t.c)
+  spr(t.s,ox+pu.x,oy+pu.y-flr(sin(gt/40)+.5))
  end
  for b in all(ebs) do
   circfill(ox+b.x,oy+b.y,1,5)
@@ -671,10 +741,20 @@ function draw_game()
  for i=1,min(lives,6) do spr(1,2+(i-1)*7,7) end
  local nm="lv"..lvl.." "..lvn[(lvl-1)%#lvn+1]
  print(nm,126-#nm*4,9,14)
- print("dust left "..(#queue+#en),4,122,5)
+ print("dust "..(#queue+#en),2,122,5)
+ -- active power-ups with time left
+ local x=32
+ for i=1,3 do
+  if pw[i]>0 then
+   if pw[i]>90 or gt%8<5 then spr(put[i].s,x,120) end
+   rect(x+9,122,x+19,126,5)
+   rectfill(x+10,123,x+10+8*pw[i]/pdur,125,put[i].c)
+   x=x+22
+  end
+ end
  for e in all(en) do
   if e.t==4 and e.sp==0 then
-   print("booger king "..(flr(e.life/60)+1),70,122,11)
+   print("king "..(flr(e.life/60)+1),99,122,11)
   end
  end
  if st=="play" then
