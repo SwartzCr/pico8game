@@ -218,6 +218,7 @@ sfxs = [
     sfx(8, seq([36, 31] * 5, 3, 4)),                                       # 7 boss
     sfx(2, seq([30, 26, 22, 18], 2, 4)),                                   # 8 enemy shot
     sfx(4, seq([36, 40, 43, 48, 43, 48], 0, 5)),                           # 9 extra life
+    sfx(3, seq([34, 28, 31, 22], 2, [6, 5, 4, 2])),                         # 10 ouch
 ]
 
 lua = open("game.lua").read()

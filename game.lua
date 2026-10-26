@@ -3,6 +3,10 @@
 -- arrows: move  x/z: saline spray
 
 ox,oy=4,16
+-- tuning: overall pace and health
+pspd=.75   -- player pixels per frame
+espd=.7    -- monster speed multiplier
+maxhp=6    -- health bar segments
 tun=5
 dxs={-1,1,0,0}
 dys={0,0,-1,1}
@@ -22,7 +26,7 @@ sox,soy=36,104
 function _init()
  cartdata("wizards_of_snort_1")
  hi=dget(0)
- gt=0 shk=0 parts={} pops={}
+ gt=0 shk=0 parts={} pops={} hp=maxhp hpfl=0
  st="intro" it=0 flow={}
 end
 
@@ -356,13 +360,14 @@ end
 -- game
 
 function start_game()
- score=0 lives=2 lvl=1 nxl=1000
+ score=0 lives=2 lvl=1 nxl=1000 hp=maxhp
  start_level()
 end
 
 function start_level()
  gen_maze()
- p={x=8,y=88,d=1,an=0,fl=false,inv=0}
+ p={x=8,y=88,d=1,an=0,fl=false,inv=0,acc=0}
+ hp=min(hp+3,maxhp)
  en={} ebs={} pb=nil parts={} pops={}
  queue={}
  for i=1,3+lvl do add(queue,1) end
@@ -389,7 +394,16 @@ function spawn(t)
  sfx(6)
 end
 
+function damage(n)
+ hp=max(hp-n,0)
+ if hp==0 then hurt() return end
+ p.inv=75 shk=4 hpfl=20
+ sfx(10)
+ puff(p.x+4,p.y+4,8,5)
+end
+
 function hurt()
+ hp=0
  dying=60 pb=nil shk=10
  sfx(2)
  puff(p.x+4,p.y+4,15,12) puff(p.x+4,p.y+4,12,8)
@@ -425,6 +439,7 @@ function upd_play()
     if score>hi then hi=score newhi=true dset(0,hi) end
    else
     p.x,p.y,p.d,p.fl,p.inv=8,88,1,false,120
+    hp=maxhp
     ebs={}
    end
   end
@@ -438,16 +453,20 @@ function upd_player()
  for i=0,3 do
   if btn(i) and (w<0 or i~=p.d) then w=i end
  end
- local mv=false
- if aligned(p) then
-  if w>=0 and canmv(p,w) then p.d=w mv=true
-  elseif w>=0 and canmv(p,p.d) then mv=true
-  elseif w>=0 then p.d=w end
- else
-  if w>=0 and w==rev[p.d+1] then p.d=w end
-  mv=true
+ p.acc=p.acc+pspd
+ while p.acc>=1 do
+  p.acc=p.acc-1
+  local mv=false
+  if aligned(p) then
+   if w>=0 and canmv(p,w) then p.d=w mv=true
+   elseif w>=0 and canmv(p,p.d) then mv=true
+   elseif w>=0 then p.d=w end
+  else
+   if w>=0 and w==rev[p.d+1] then p.d=w end
+   mv=true
+  end
+  if mv then step(p) p.an=p.an+1 end
  end
- if mv then step(p) p.an=p.an+1 end
  if p.d<2 then p.fl=p.d==0 end
  if (btnp(4) or btnp(5)) and not pb then
   pb={x=p.x+4,y=p.y+4,d=p.d}
@@ -457,7 +476,7 @@ end
 
 function upd_pb()
  if not pb then return end
- for i=1,3 do
+ for i=1,2 do
   pb.x=pb.x+dxs[pb.d+1] pb.y=pb.y+dys[pb.d+1]
   if pb.x<0 or pb.x>=120 or solid(flr(pb.x/8),flr(pb.y/8)) then
    puff(pb.x,pb.y,12,3) pb=nil return
@@ -494,14 +513,14 @@ end
 function upd_enemies()
  sptm=sptm-1
  if #en<maxon and #queue>0 and sptm<=0 then
-  spawn(queue[#queue]) queue[#queue]=nil sptm=45
+  spawn(queue[#queue]) queue[#queue]=nil sptm=60
  end
  local angry=#queue==0 and #en<=2
  for e in all(en) do
   local k=kt[e.t]
   if e.sp>0 then e.sp=e.sp-1
   else
-   local v=min(k.spd*(1+(lvl-1)*.07)*(angry and 1.35 or 1),2)
+   local v=min(k.spd*espd*(1+(lvl-1)*.05)*(angry and 1.3 or 1),1.5)
    e.acc=e.acc+v
    while e.acc>=1 do
     e.acc=e.acc-1
@@ -515,10 +534,10 @@ function upd_enemies()
     if abs(e.y-p.y)<3 then d=p.x<e.x and 0 or 1
     elseif abs(e.x-p.x)<3 then d=p.y<e.y and 2 or 3 end
     if d>=0 then
-     add(ebs,{x=e.x+4,y=e.y+4,d=d}) e.cd=90 sfx(8)
+     add(ebs,{x=e.x+4,y=e.y+4,d=d}) e.cd=120 sfx(8)
     end
    end
-   if dying==0 and p.inv<=0 and abs(e.x-p.x)<6 and abs(e.y-p.y)<6 then hurt() end
+   if dying==0 and p.inv<=0 and abs(e.x-p.x)<6 and abs(e.y-p.y)<6 then damage(2) end
    if e.t==4 then
     e.life=e.life-1
     if e.life<=0 then
@@ -541,11 +560,13 @@ end
 function upd_ebs()
  for b in all(ebs) do
   local dead=false
-  for i=1,2 do
+  b.acc=(b.acc or 0)+1.25
+  while b.acc>=1 do
+   b.acc=b.acc-1
    b.x=b.x+dxs[b.d+1] b.y=b.y+dys[b.d+1]
    if b.x<0 or b.x>=120 or solid(flr(b.x/8),flr(b.y/8)) then dead=true break end
    if dying==0 and p.inv<=0 and abs(p.x+4-b.x)<4 and abs(p.y+4-b.y)<4 then
-    dead=true hurt() break
+    dead=true damage(1) break
    end
   end
   if dead then del(ebs,b) end
@@ -611,6 +632,18 @@ function draw_pl()
  else dspr(1+fr,p.x,p.y,p.fl) end
 end
 
+function draw_hp()
+ if hpfl>0 then hpfl=hpfl-1 end
+ local hc=hp>3 and 11 or (hp>1 and 10 or 8)
+ local hx=54
+ print(chr(135),hx,1,(hp<=1 and gt%20<10) and 2 or 8)
+ rect(hx+7,0,hx+8+maxhp*4,6,hpfl%4>1 and 7 or 5)
+ for i=1,maxhp do
+  local x=hx+5+i*4
+  rectfill(x,2,x+2,4,i<=hp and hc or 1)
+ end
+end
+
 function draw_game()
  cls(0)
  for s in all(specks) do pset(ox+s[1],oy+s[2],s[3]) end
@@ -634,6 +667,7 @@ function draw_game()
  -- hud
  print("score "..pad(score,5).."0",2,1,7)
  print("hi "..pad(max(hi,score),5).."0",90,1,6)
+ draw_hp()
  for i=1,min(lives,6) do spr(1,2+(i-1)*7,7) end
  local nm="lv"..lvl.." "..lvn[(lvl-1)%#lvn+1]
  print(nm,126-#nm*4,9,14)

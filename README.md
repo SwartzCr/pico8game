@@ -21,6 +21,11 @@ PICO-8 window).
 | Dust mite   | 500    | invisible unless you're close                |
 | Booger King | 2500   | appears after each wave, escapes after 10 s  |
 
+You have a 6-segment health bar at the top of the screen. A monster bumping
+into you costs 2 segments and a dust ball costs 1, with a moment of
+invulnerability after each hit. Run out and you lose a life. Health refills
+fully on a new life and partly (+3) at the start of each level.
+
 Extra life every 10,000 points. High score is saved.
 
 ## Files
@@ -34,5 +39,5 @@ Extra life every 10,000 points. High score is saved.
   and screenshots, run with a stock Lua 5.4:
   `lua tools/harness.lua wizards_of_snort.p8 smoke 1` or `... shots`
 
-Tuning: monster speeds, chase behavior and points are in the `kt` table at the
-top of `game.lua`.
+Tuning: overall pace (`pspd`, `espd`) and health (`maxhp`) are at the top of
+`game.lua`; per-monster speed, chase behavior and points are in the `kt` table.
