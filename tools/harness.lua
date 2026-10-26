@@ -16,10 +16,29 @@ local fb={} for i=0,128*128-1 do fb[i]=0 end
 local camx,camy=0,0
 local clx0,cly0,clx1,cly1=0,0,127,127
 local dpal={} for i=0,15 do dpal[i]=i end
+local fpat,ftr=0,false
 local function px(x,y,c)
  x=math.floor(x-camx) y=math.floor(y-camy)
  if x<clx0 or x>clx1 or y<cly0 or y>cly1 then return end
+ if fpat~=0 then
+  local bit=15-((y%4)*4+x%4)
+  if (fpat>>bit)&1==1 then
+   if ftr then return end
+   c=0
+  end
+ end
  fb[y*128+x]=dpal[math.floor(c)%16]
+end
+function fillp(p)
+ p=p or 0
+ fpat=math.floor(p)&0xffff ftr=(p%1)>0
+end
+function memcpy(dst,src,len)
+ assert(dst>=0x6000 and src>=0x6000,"harness memcpy only supports screen memory")
+ local d,s0=(dst-0x6000)*2,(src-0x6000)*2
+ local tmp={}
+ for i=0,len*2-1 do tmp[i]=fb[s0+i] end
+ for i=0,len*2-1 do fb[d+i]=tmp[i] end
 end
 local mapd={}
 local calls={sfx={}}
@@ -54,11 +73,12 @@ function circfill(cx,cy,r,c) cx,cy=math.floor(cx),math.floor(cy) r=math.floor(r)
 function circ(cx,cy,r,c) cx,cy=math.floor(cx),math.floor(cy) r=math.floor(r) for a=0,63 do px(cx+math.floor(math.cos(a/64*6.283)*r+.5),cy+math.floor(math.sin(a/64*6.283)*r+.5),c) end end
 function ovalfill(x0,y0,x1,y1,c) local cx,cy,rx,ry=(x0+x1)/2,(y0+y1)/2,(x1-x0)/2,(y1-y0)/2 for y=y0,y1 do for x=x0,x1 do local dx,dy=(x-cx)/(rx+.5),(y-cy)/(ry+.5) if dx*dx+dy*dy<=1 then px(x,y,c) end end end end
 function line(x0,y0,x1,y1,c) local n=math.max(math.abs(x1-x0),math.abs(y1-y0)) if n==0 then px(x0,y0,c) return end for i=0,n do px(x0+(x1-x0)*i/n+.5,y0+(y1-y0)*i/n+.5,c) end end
-function sspr(sx,sy,sw,sh,dx,dy,dw,dh,fx)
+function sspr(sx,sy,sw,sh,dx,dy,dw,dh,fx,fy)
  dw=dw or sw dh=dh or sh
  for y=0,math.floor(dh)-1 do for x=0,math.floor(dw)-1 do
   local u=math.floor(x*sw/dw) if fx then u=sw-1-u end
-  local c=sget(sx+u,sy+math.floor(y*sh/dh))
+  local v=math.floor(y*sh/dh) if fy then v=sh-1-v end
+  local c=sget(sx+u,sy+v)
   if c~=0 then px(dx+x,dy+y,c) end
  end end
 end

@@ -171,11 +171,31 @@ function draw_face(wx,wy)
  line(42,75,86,75,2)
 end
 
+-- a giant mirror for a floor: flip the scene above the horizon into it
 function draw_floor()
- rectfill(0,84,127,127,4)
- line(0,84,127,84,9)
- for i=-6,6 do line(64+i*4,84,64+i*30,127,2) end
- for y in all({88,94,103,116}) do line(0,y,127,y,2) end
+ for y=85,127 do
+  memcpy(0x6000+y*64,0x6000+(168-y)*64,64)
+ end
+ -- silvery sheen over the reflection
+ fillp(0xafaf.8)
+ rectfill(0,85,127,127,6)
+ fillp()
+ -- glints sliding across the glass
+ for i=0,2 do
+  local x=(gt*.4+i*60)%220-50
+  line(x,127,x+28,85,7)
+  line(x+6,127,x+31,89,6)
+ end
+ -- the mirror's edge
+ line(0,84,127,84,7)
+ line(0,85,127,85,13)
+end
+
+-- an upside-down, dimmed copy of the explorer under his feet
+function refl(x,y,sz,fl,fr)
+ for i=1,15 do pal(i,({1,2,1,2,5,13,6,2,4,9,3,13,1,8,4})[i]) end
+ sspr(fr*8,0,8,8,x,y+sz,sz,sz,fl,true)
+ pal()
 end
 
 -- straw in perspective: thin at the nostril, wide at the mouth
@@ -225,6 +245,7 @@ function draw_intro()
  -- the tiny explorer
  local mx,my=46,104
  if it<60 then
+  refl(mx,my,8,it>30,1)
   dman(mx,my,8,it>30,1)
  elseif it<200 then
   if it<130 then
@@ -233,6 +254,7 @@ function draw_intro()
   else
    mx=66-10*(it-130)/70+rnd(2)-1
   end
+  refl(mx,my,8,false,gt%6<3 and 1 or 2)
   dman(mx,my,8,false,gt%6<3 and 1 or 2)
   -- sweat flying off
   if gt%8<4 then pset(mx-1,my+1,12) pset(mx-3,my-1,12) end
@@ -939,6 +961,7 @@ function draw_ending()
   else
    -- landed: bounce, then a happy wave
    local b=max(0,8-(et-160))*abs(sin((et-160)/16))
+   refl(x-8,y-8+b,16,flr(et/20)%2==0,11)
    sspr(88,0,8,8,x-8,y-8-b,16,16,flr(et/20)%2==0)
    if et>190 then print(big.."yay!",x+10,y-20,10) end
   end
